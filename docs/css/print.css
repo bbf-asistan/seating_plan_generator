@@ -9,10 +9,18 @@
   .step.step-plan, .step.step-plan[hidden] { display: block !important; height: auto; animation: none; }
 
   .grid-wrap { overflow: visible; padding: 0; border: 0; background: #fff; }
-  .room-grid { height: auto; min-width: 0; max-width: none !important; gap: 4px; }
+  /* Exactly one page tall (100vh is the printable area of the page in
+     print): the seat rows share whatever height the paper leaves instead of
+     growing with their content and spilling onto a second page. The 2px
+     slack keeps rounding from pushing the last row over. */
+  .room-grid {
+    height: calc(100vh - 2px); max-height: none !important; min-width: 0; max-width: none !important; gap: 4px;
+    grid-template-rows: auto auto repeat(var(--bands), minmax(0, 1fr)) !important;
+    break-inside: avoid;
+  }
   .g-title { background: #fff; color: #000; border: 2px solid #000; border-radius: 0; }
   .g-lectern { background: #fff; color: #000; border: 1px solid #000; border-radius: 0; }
-  .g-seat { min-height: 52px; border-color: #000 !important; border-style: solid !important; background: #fff !important; border-radius: 0; box-shadow: none !important; }
+  .g-seat { min-height: 0; border-color: #000 !important; border-style: solid !important; background: #fff !important; border-radius: 0; box-shadow: none !important; }
   .g-seat .s-id, .g-seat .s-name, .g-seat .s-no { color: #000; }
   .g-corridor { background: #fff; border: 1px dashed #999; border-radius: 0; color: #666; }
   .g-seat.disabled { background: #f0f0f0 !important; border-style: dashed !important; }

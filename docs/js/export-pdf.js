@@ -70,7 +70,12 @@ function sheetLayout(sheet, pageW, pageH) {
   if (page.fitToPage) {
     const natH = rh.reduce((a, b) => a + b, 0);
     const sx = page.fitToWidth > 0 ? availW / natW : Infinity;
-    const sy = page.fitToHeight > 0 ? availH / natH : Infinity;
+    // Every room template is a one-page plan, so a fit-to-page sheet is also
+    // kept within one page height even when the template says fitToHeight 0
+    // ("as many pages as needed"). Without this Z-17 — width-limited to
+    // ~97.6 % — runs ~5 pt past the bottom margin and its last row spills
+    // onto a page of its own.
+    const sy = availH / natH;
     s = Math.min(1, sx, sy);
   } else {
     s = page.scale / 100;
@@ -83,7 +88,9 @@ function sheetLayout(sheet, pageW, pageH) {
   while (start < rh.length) {
     let end = start;
     let h = 0;
-    while (end < rh.length && (h + rh[end] * s <= availH || end === start)) { h += rh[end] * s; end++; }
+    // The epsilon absorbs float rounding when a sheet is scaled to exactly
+    // fill the page height.
+    while (end < rh.length && (h + rh[end] * s <= availH + 1e-6 || end === start)) { h += rh[end] * s; end++; }
     pages.push({ r1: start + 1, r2: end, height: h });
     start = end;
   }
