@@ -8,6 +8,19 @@ import { t } from './i18n.js';
 import { activeCellOrder } from './store.js';
 import { el, rebuild } from './ui.js';
 
+// Prints the room on paper turned the way its Excel template is (Z-17 and
+// the other wide rooms are landscape), so the plan fits one page.
+function setPrintOrientation(orientation) {
+  let style = document.getElementById('print-page');
+  if (!style) {
+    style = document.createElement('style');
+    style.id = 'print-page';
+    style.media = 'print';
+    document.head.appendChild(style);
+  }
+  style.textContent = `@page { size: ${orientation === 'landscape' ? 'landscape' : 'portrait'}; margin: 10mm; }`;
+}
+
 export function renderGrid(state, classrooms) {
   const wrap = document.getElementById('grid-wrap');
   wrap.replaceChildren();
@@ -27,6 +40,8 @@ export function renderGrid(state, classrooms) {
   grid.style.gridTemplateRows = `auto auto repeat(${bands}, minmax(50px, 1fr))`;
   grid.style.maxWidth = `${seatCols * 150 + corridorCols * 44}px`; // no giant seats in small rooms
   grid.style.maxHeight = `${92 + bands * 84}px`;
+  grid.style.setProperty('--bands', String(bands)); // print.css re-fits the rows to one page
+  setPrintOrientation(room.orientation);
 
   const colIndex = {};
   room.columns.forEach((c, i) => { colIndex[c.letter] = i + 1; });
