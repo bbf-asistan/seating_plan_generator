@@ -10,7 +10,9 @@
 // The merged documents are assembled from the per-room PDFs with pdf-lib,
 // exactly as the CLI's merge_pdfs does with pypdf: page 1 of every room for
 // the ID-only set, page 2 for the full set, and tutanak + page 2 for the
-// printable set — rooms in sorted file-name order.
+// printable set — rooms in sorted file-name order. One difference from the
+// CLI: a landscape room page is turned to portrait in the merged documents
+// (see portraitPage), so a whole merged document prints in one orientation.
 
 import {
   safeFileName, roomSnapshot, seatLines, roomsInFileOrder, downloadBytes, loadScript, fetchBytes,
@@ -298,18 +300,33 @@ async function ensurePdfLib() {
   return window.PDFLib;
 }
 
+// Wide rooms (today Z-16, Z-17, Z-18) print on landscape paper; other rooms
+// and the tutanak print portrait. A merged document holding both makes the
+// printer switch orientation page by page, so a landscape page gets a quarter
+// turn counter-clockwise (the plan's top edge faces the sheet's left edge, as
+// printers lay landscape on portrait paper). Only the page's /Rotate entry
+// changes: the drawing stays vector and the same size.
+function portraitPage(page, degrees) {
+  const { width, height } = page.getSize();
+  const angle = page.getRotation().angle;
+  const shownWide = angle % 180 === 0 ? width > height : height > width;
+  if (shownWide) page.setRotation(degrees((angle + 270) % 360));
+}
+
 // Port of merge_pdfs. roomPdfs: [{roomId, bytes}] already in file order.
 async function mergeRoomPdfs(roomPdfs, pageIndex, tutanakBytes) {
-  const { PDFDocument } = await ensurePdfLib();
+  const { PDFDocument, degrees } = await ensurePdfLib();
   const out = await PDFDocument.create();
   const tutanak = tutanakBytes ? await PDFDocument.load(tutanakBytes) : null;
   for (const { bytes } of roomPdfs) {
     const src = await PDFDocument.load(bytes);
     if (tutanak) {
       const [tp] = await out.copyPages(tutanak, [0]);
+      portraitPage(tp, degrees);
       out.addPage(tp);
     }
     const [p] = await out.copyPages(src, [pageIndex]);
+    portraitPage(p, degrees);
     out.addPage(p);
   }
   return out.save();
